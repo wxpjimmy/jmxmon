@@ -78,24 +78,24 @@
 					<argLine>-Dfile.encoding=UTF8</argLine>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.9</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<encoding>UTF-8</encoding>
-					<charset>UTF-8</charset>
-					<docencoding>UTF-8</docencoding>
-				</configuration>
-			</plugin>
+			<!--<plugin>-->
+				<!--<groupId>org.apache.maven.plugins</groupId>-->
+				<!--<artifactId>maven-javadoc-plugin</artifactId>-->
+				<!--<version>2.9</version>-->
+				<!--<executions>-->
+					<!--<execution>-->
+						<!--<phase>package</phase>-->
+						<!--<goals>-->
+							<!--<goal>jar</goal>-->
+						<!--</goals>-->
+					<!--</execution>-->
+				<!--</executions>-->
+				<!--<configuration>-->
+					<!--<encoding>UTF-8</encoding>-->
+					<!--<charset>UTF-8</charset>-->
+					<!--<docencoding>UTF-8</docencoding>-->
+				<!--</configuration>-->
+			<!--</plugin>-->
 			<plugin> 
 				<groupId>org.apache.maven.plugins</groupId> 
 				<artifactId>maven-source-plugin</artifactId> 
@@ -129,6 +129,11 @@
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>com.101tec</groupId>
+			<artifactId>zkclient</artifactId>
+			<version>0.3</version>
 		</dependency>
 		
 		<dependency>

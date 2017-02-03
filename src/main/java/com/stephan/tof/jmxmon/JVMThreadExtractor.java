@@ -13,9 +13,11 @@ import com.stephan.tof.jmxmon.jmxutil.ProxyClient;
 
 public class JVMThreadExtractor extends JVMDataExtractor<ThreadInfo> {
 
-	public JVMThreadExtractor(ProxyClient proxyClient, int jmxPort)
+	private String host;
+	public JVMThreadExtractor(ProxyClient proxyClient, int jmxPort, String host)
 			throws IOException {
 		super(proxyClient, jmxPort);
+		this.host = host;
 	}
 
 	@Override
@@ -34,7 +36,7 @@ public class JVMThreadExtractor extends JVMDataExtractor<ThreadInfo> {
 		// 将jvm信息封装成openfalcon格式数据
 		FalconItem threadNumItem = new FalconItem();
 		threadNumItem.setCounterType(CounterType.GAUGE.toString());
-		threadNumItem.setEndpoint(Config.I.getHostname());
+		threadNumItem.setEndpoint(host);
 		threadNumItem.setMetric(StringUtils.lowerCase(Constants.threadActiveCount));
 		threadNumItem.setStep(Constants.defaultStep);
 		threadNumItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	
@@ -44,7 +46,7 @@ public class JVMThreadExtractor extends JVMDataExtractor<ThreadInfo> {
 		
 		FalconItem peakThreadNumItem = new FalconItem();
 		peakThreadNumItem.setCounterType(CounterType.GAUGE.toString());
-		peakThreadNumItem.setEndpoint(Config.I.getHostname());
+		peakThreadNumItem.setEndpoint(host);
 		peakThreadNumItem.setMetric(StringUtils.lowerCase(Constants.threadPeakCount));
 		peakThreadNumItem.setStep(Constants.defaultStep);
 		peakThreadNumItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	

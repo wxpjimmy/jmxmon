@@ -2,9 +2,13 @@ package com.stephan.tof.jmxmon;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,12 +25,14 @@ public class Config {
 	private File jvmContextFile;	// 用来存放JVM数据文件（比如上一次的gc总耗时、gc总次数等），文件保存在workDir下
 	private JVMContext jvmContext = new JVMContext();	// JVM数据文件对象
 	
-	private String hostname;
+	//private String hostname;
 	private String agentPostUrl;
 	private int step;
+	private Map<String, Integer> serviceZKPathToJmxPort;
 	
 	private String jmxHost;
 	private int[] jmxPorts;
+	private String zkServers;
 	
 	private Config(){}
 	
@@ -41,7 +47,7 @@ public class Config {
 			throw new IllegalArgumentException("workDir is not a directory");
 		}
 		
-		this.hostname = config.getString("hostname", Utils.getHostNameForLinux());
+		//this.hostname = config.getString("hostname", Utils.getHostNameForLinux());
 		
 		this.jvmContextFile = new File(workDir, "jmxmon.jvm.context.json");
 		
@@ -61,11 +67,16 @@ public class Config {
 		if (this.jmxHost == null) {
 			this.jmxHost = "localhost";
 		}
+
+		this.zkServers = config.getString("zkservers");
 		
 		String[] jmxPortArray = config.getStringArray("jmx.ports");
-		jmxPorts = new int[jmxPortArray.length];
+		serviceZKPathToJmxPort = new HashMap<String, Integer>();
+		//jmxPorts = new int[jmxPortArray.length];
 		for (int i = 0; i < jmxPortArray.length; i++) {
-			jmxPorts[i] = Integer.parseInt(jmxPortArray[i]);
+			String[] parts = StringUtils.split(jmxPortArray[i], ":");
+			serviceZKPathToJmxPort.put(parts[0], Integer.valueOf(parts[1]));
+			//jmxPorts[i] = Integer.parseInt(jmxPortArray[i]);
 		}
 		
 		logger.info("init config ok");
@@ -86,12 +97,12 @@ public class Config {
 		return workDir;
 	}
 
-	/**
-	 * @return the hostname
-	 */
-	public String getHostname() {
-		return hostname;
-	}
+//	/**
+//	 * @return the hostname
+//	 */
+//	public String getHostname() {
+//		return hostname;
+//	}
 
 	/**
 	 * @return the agentPostUrl
@@ -126,5 +137,13 @@ public class Config {
 	 */
 	public JVMContext getJvmContext() {
 		return jvmContext;
+	}
+
+	public Map<String, Integer> getServiceZKPathToJmxPort() {
+		return serviceZKPathToJmxPort;
+	}
+
+	public String getZkServers() {
+		return zkServers;
 	}
 }

@@ -14,8 +14,9 @@ import com.stephan.tof.jmxmon.bean.FalconItem;
 import com.stephan.tof.jmxmon.jmxutil.ProxyClient;
 
 public class JVMGCThroughputExtractor extends JVMDataExtractor<Double> {
+	private String host;
 
-	public JVMGCThroughputExtractor(ProxyClient proxyClient, int jmxPort)
+	public JVMGCThroughputExtractor(ProxyClient proxyClient, int jmxPort, String host)
 			throws IOException {
 		super(proxyClient, jmxPort);
 	}
@@ -42,7 +43,7 @@ public class JVMGCThroughputExtractor extends JVMDataExtractor<Double> {
 		// 将jvm信息封装成openfalcon格式数据
 		FalconItem item = new FalconItem();
 		item.setCounterType(CounterType.GAUGE.toString());
-		item.setEndpoint(Config.I.getHostname());
+		item.setEndpoint(host);
 		item.setMetric(StringUtils.lowerCase(Constants.gcThroughput));
 		item.setStep(Constants.defaultStep);
 		item.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	

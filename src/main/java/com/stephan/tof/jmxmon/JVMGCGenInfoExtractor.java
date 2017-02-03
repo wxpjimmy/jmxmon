@@ -17,9 +17,11 @@ import com.stephan.tof.jmxmon.bean.JVMContext;
 import com.stephan.tof.jmxmon.jmxutil.ProxyClient;
 
 public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInfo>> {
+	private String host;
 
-	public JVMGCGenInfoExtractor(ProxyClient proxyClient, int jmxPort) throws IOException {
+	public JVMGCGenInfoExtractor(ProxyClient proxyClient, int jmxPort, String host) throws IOException {
 		super(proxyClient, jmxPort);
+		this.host = host;
 	}
 
 	/**
@@ -73,7 +75,7 @@ public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInf
 		for (String gcMXBeanName : jmxResultData.keySet()) {
 			FalconItem avgTimeItem = new FalconItem();
 			avgTimeItem.setCounterType(CounterType.GAUGE.toString());
-			avgTimeItem.setEndpoint(Config.I.getHostname());
+			avgTimeItem.setEndpoint(host);
 			avgTimeItem.setMetric(StringUtils.lowerCase(gcMXBeanName + Constants.metricSeparator + Constants.gcAvgTime));
 			avgTimeItem.setStep(Constants.defaultStep);
 			avgTimeItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	
@@ -83,7 +85,7 @@ public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInf
 			
 			FalconItem countItem = new FalconItem();
 			countItem.setCounterType(CounterType.GAUGE.toString());
-			countItem.setEndpoint(Config.I.getHostname());
+			countItem.setEndpoint(host);
 			countItem.setMetric(StringUtils.lowerCase(gcMXBeanName + Constants.metricSeparator + Constants.gcCount));
 			countItem.setStep(Constants.defaultStep);
 			countItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	

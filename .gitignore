@@ -1,8 +1,6 @@
-/target/
-/.settings
-/.project
-/.classpath
-/coverage-report
-/test.jvmcontext.json
-/jmxmon.jvm.context.json
-/test.falconPostData.json
+.idea
+*.iml
+target/*
+conf/*
+release/
+sh.sh
