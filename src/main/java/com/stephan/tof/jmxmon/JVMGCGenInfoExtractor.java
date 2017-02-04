@@ -37,10 +37,10 @@ public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInf
 			long gcTotalTime = gcMXBean.getCollectionTime();
 			long gcTotalCount = gcMXBean.getCollectionCount();
 			
-			GCData gcData = c.getJvmData(getJmxPort()).getGcData(gcMXBean.getName());
+			GCData gcData = c.getJvmData(getJmxPort(), host).getGcData(gcMXBean.getName());
 			long lastGCTotalTime = gcData.getCollectionTime();
 			long lastGCTotalCount = gcData.getCollectionCount();
-			
+
 			long tmpGCTime = gcTotalTime - lastGCTotalTime;
 			long gcCount = gcTotalCount - lastGCTotalCount;
 			if (lastGCTotalCount <= 0 || gcCount < 0) {
@@ -52,7 +52,8 @@ public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInf
 			GCGenInfo gcGenInfo = new GCGenInfo(avgGCTime, gcCount);
 			result.put(gcMXBean.getName(), gcGenInfo);
 			
-			logger.debug("mxbean=" + gcMXBean.getName() + 
+			logger.debug("mxbean=" + gcMXBean.getName() +
+					 "host=" + host + ", jmxport=" + getJmxPort() +
 					", gcTotalTime=" + gcTotalTime + ", gcTotalCount=" + gcTotalCount + 
 					", lastGCTotalTime=" + lastGCTotalTime + ", lastGCTotalCount=" + lastGCTotalCount + 
 					", avgGCTime=" + avgGCTime + ", gcCount=" + gcCount);

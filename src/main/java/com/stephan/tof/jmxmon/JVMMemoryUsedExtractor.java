@@ -47,7 +47,7 @@ public class JVMMemoryUsedExtractor extends JVMDataExtractor<MemoryUsedInfo> {
 
 		// 在一个上报周期内，老年代的内存变化大小~=新生代晋升大小
 		GarbageCollectorMXBean majorGCMXBean = gcMXBeanArray[1];
-		GCData majorGcData = c.getJvmData(getJmxPort()).getGcData(majorGCMXBean.getName());
+		GCData majorGcData = c.getJvmData(getJmxPort(), host).getGcData(majorGCMXBean.getName());
 		long lastOldGenMemoryUsed = majorGcData.getMemoryUsed();
 		long newGenPromotion = oldGenUsed - lastOldGenMemoryUsed;
 		if (lastOldGenMemoryUsed <= 0 || newGenPromotion < 0) {
@@ -56,7 +56,7 @@ public class JVMMemoryUsedExtractor extends JVMDataExtractor<MemoryUsedInfo> {
 		
 		// 在一个上报周期内，YGC次数
 		GarbageCollectorMXBean minorGCMXBean = gcMXBeanArray[0];
-		GCData minorGcData = c.getJvmData(getJmxPort()).getGcData(minorGCMXBean.getName());
+		GCData minorGcData = c.getJvmData(getJmxPort(), host).getGcData(minorGCMXBean.getName());
 		long gcCount = minorGcData.getUnitTimeCollectionCount();
 		
 		long newGenAvgPromotion = 0;

@@ -18,14 +18,15 @@ public class JVMContext {
 	 * port -> jvm data
 	 */
 	@JsonProperty
-	private Map<Integer, JVMData> jvmDatas = new LinkedHashMap<Integer, JVMData>();
+	private Map<String, JVMData> jvmDatas = new LinkedHashMap<String, JVMData>();
 
-	public JVMData getJvmData(Integer jmxPort) {
-		if(jvmDatas.containsKey(jmxPort)) {
-			return jvmDatas.get(jmxPort);
+	public JVMData getJvmData(Integer jmxPort, String host) {
+		String key = host + ":" + jmxPort;
+		if(jvmDatas.containsKey(key)) {
+			return jvmDatas.get(key);
 		} else {
 			JVMData jvmData = new JVMData();
-			jvmDatas.put(jmxPort, jvmData);
+			jvmDatas.put(key, jvmData);
 			return jvmData;
 		}
 	}
