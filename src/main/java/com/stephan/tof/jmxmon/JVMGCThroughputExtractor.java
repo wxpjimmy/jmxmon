@@ -19,6 +19,7 @@ public class JVMGCThroughputExtractor extends JVMDataExtractor<Double> {
 	public JVMGCThroughputExtractor(ProxyClient proxyClient, int jmxPort, String host)
 			throws IOException {
 		super(proxyClient, jmxPort);
+		this.host = host;
 	}
 
 	@Override

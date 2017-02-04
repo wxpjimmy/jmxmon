@@ -53,7 +53,7 @@ public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInf
 			result.put(gcMXBean.getName(), gcGenInfo);
 			
 			logger.debug("mxbean=" + gcMXBean.getName() +
-					 "host=" + host + ", jmxport=" + getJmxPort() +
+					 ", host=" + host + ", jmxport=" + getJmxPort() +
 					", gcTotalTime=" + gcTotalTime + ", gcTotalCount=" + gcTotalCount + 
 					", lastGCTotalTime=" + lastGCTotalTime + ", lastGCTotalCount=" + lastGCTotalCount + 
 					", avgGCTime=" + avgGCTime + ", gcCount=" + gcCount);
