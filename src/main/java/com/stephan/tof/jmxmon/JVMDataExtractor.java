@@ -19,8 +19,8 @@ public abstract class JVMDataExtractor<T> extends JMXCall<T> {
 	
 	private final ThreadMXBean threadMXBean;
 	
-	public JVMDataExtractor(ProxyClient proxyClient, int jmxPort) throws IOException {
-		super(proxyClient, jmxPort);
+	public JVMDataExtractor(ProxyClient proxyClient, int jmxPort, String serviceTag) throws IOException {
+		super(proxyClient, jmxPort, serviceTag);
 		gcMXBeanList = proxyClient.getGarbageCollectorMXBeans();
 		runtimeMXBean = proxyClient.getRuntimeMXBean();
 		memoryPoolList = proxyClient.getMemoryPoolProxies();

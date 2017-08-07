@@ -1,12 +1,14 @@
 package com.stephan.tof.jmxmon;
 
 import java.net.InetAddress;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.I0Itec.zkclient.exception.ZkMarshallingError;
+import org.I0Itec.zkclient.serialize.ZkSerializer;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,7 @@ public class JMXMonitor {
 
 	private static Logger logger = LoggerFactory.getLogger(JMXMonitor.class);
 	private static String pattern = "/services/%s/Pool";
+	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 	
 	public static void main(String[] args) {
 		if (args.length != 1) {
@@ -36,11 +39,31 @@ public class JMXMonitor {
 			throw new IllegalStateException(e);	// 抛出异常便于外部脚本感知
 		}
 
-		Map<String, Integer> serviceZkPathToJmxPort = Config.I.getServiceZKPathToJmxPort();
+
+		String jmxZkConfigPath = Config.I.getJmxZKConfigPath();
+	 	JMXZKNode jmxzkNode = new JMXZKNode(Config.I.getZkServers(), new ZKStringSerializer());
 		List<Runnable> tasks = new ArrayList<Runnable>();
-		for(String service: serviceZkPathToJmxPort.keySet()) {
-			Runnable runnable = new Task(service, serviceZkPathToJmxPort.get(service));
-			tasks.add(runnable);
+
+		if (StringUtils.isBlank(jmxZkConfigPath)) {
+			Map<String, Integer> serviceZkPathToJmxPort = Config.I.getServiceZKPathToJmxPort();
+			for (String service : serviceZkPathToJmxPort.keySet()) {
+				Runnable runnable = new Task(service, serviceZkPathToJmxPort.get(service));
+				tasks.add(runnable);
+			}
+		} else  {
+			String data = jmxzkNode.getContent(jmxZkConfigPath);
+			String[] parts = StringUtils.split(data, ",");
+			for(String part:parts) {
+				String[] secs = StringUtils.split(part, ":");
+				String zkServicePath = secs[0];
+				int jmxPort = Integer.parseInt(secs[1]);
+				String serviceTag = null;
+				if (secs.length > 2) {
+					serviceTag = secs[2];
+				}
+				Runnable runnable = new Task(jmxzkNode, zkServicePath, jmxPort, serviceTag);
+				tasks.add(runnable);
+			}
 		}
 
 		ScheduledExecutorService executor = Executors.newScheduledThreadPool(tasks.size());
@@ -49,61 +72,16 @@ public class JMXMonitor {
 		}
 	}
 
-	/**
-	 * 
-	 */
-	private static void runTask() {
-		try {
-			List<FalconItem> items = new ArrayList<FalconItem>();
-			long start = System.currentTimeMillis();
-			int num = 0;
-			for (int jmxPort : Config.I.getJmxPorts()) {
-				num++;
-				// 从JMX中获取JVM信息
-				ProxyClient proxyClient = null;
-				try {
-					proxyClient = ProxyClient.getProxyClient(Config.I.getJmxHost(), jmxPort, null, null);
-					proxyClient.connect();
-					
-					JMXCall<Map<String, GCGenInfo>> gcGenInfoExtractor = new JVMGCGenInfoExtractor(proxyClient, jmxPort, Config.I.getJmxHost());
-					Map<String, GCGenInfo> genInfoMap = gcGenInfoExtractor.call();
-					items.addAll(gcGenInfoExtractor.build(genInfoMap));
-					
-					JMXCall<Double> gcThroughputExtractor = new JVMGCThroughputExtractor(proxyClient, jmxPort, Config.I.getJmxHost());
-					Double gcThroughput = gcThroughputExtractor.call();
-					items.addAll(gcThroughputExtractor.build(gcThroughput));
-					
-					JMXCall<MemoryUsedInfo> memoryUsedExtractor = new JVMMemoryUsedExtractor(proxyClient, jmxPort, Config.I.getJmxHost());
-					MemoryUsedInfo memoryUsedInfo = memoryUsedExtractor.call();
-					items.addAll(memoryUsedExtractor.build(memoryUsedInfo));
-					
-					JMXCall<ThreadInfo> threadExtractor = new JVMThreadExtractor(proxyClient, jmxPort, Config.I.getJmxHost());
-					ThreadInfo threadInfo = threadExtractor.call();
-					items.addAll(threadExtractor.build(threadInfo));
-				} finally {
-					if (proxyClient != null) {
-						proxyClient.disconnect();
-					}
-				}
-			}
+	static class ZKStringSerializer implements ZkSerializer {
 
-			long cost = System.currentTimeMillis() - start;
-			logger.info("Fetch {} JXM info cost {} millis", num, cost);
+		@Override
+		public byte[] serialize(Object data) throws ZkMarshallingError {
+			return ((String) data).getBytes(DEFAULT_CHARSET);
+		}
 
-			// 发送items给Openfalcon agent
-			String content = JacksonUtil.writeBeanToString(items, false);
-			HttpResult postResult = HttpClientUtils.getInstance().post(Config.I.getAgentPostUrl(), content);
-			logger.info("post status=" + postResult.getStatusCode() + 
-					", post url=" + Config.I.getAgentPostUrl() + ", content=" + content);
-			if (postResult.getStatusCode() != HttpClientUtils.okStatusCode ||
-					postResult.getT() != null) {
-				throw postResult.getT(); 
-			}
-			
-			// 将context数据回写文件
-			Config.I.flush();
-		} catch (Throwable e) {
-			logger.error(e.getMessage(), e);
+		@Override
+		public Object deserialize(byte[] bytes) throws ZkMarshallingError {
+			return new String(bytes, DEFAULT_CHARSET);
 		}
 	}
 
@@ -120,25 +98,39 @@ public class JMXMonitor {
 	}
 
 	static class Task implements Runnable {
-		private String service;
+		private String serviceZKPath;
 		private int jmxport;
 		private JMXZKNode jmxzkNode;
+		//tag used in counter
+		private String serviceTag;
 		private Map<String, String> ipToHost = new HashMap<>();
 
-		public Task(String service, int jmxport) {
+		@Deprecated
+		private Task(String serviceZKPath, int jmxport) {
 			jmxzkNode = new JMXZKNode(Config.I.getZkServers());
-			this.service = service;
+			this.serviceZKPath = serviceZKPath;
 			this.jmxport = jmxport;
+		}
+
+		public Task(JMXZKNode jmxzkNode, String serviceZkPath, int jmxport) {
+			this(jmxzkNode, serviceZkPath, jmxport, null);
+		}
+
+		public Task(JMXZKNode jmxzkNode, String serviceZkPath, int jmxport, String serviceName) {
+			this.jmxzkNode = jmxzkNode;
+			this.serviceZKPath = serviceZkPath;
+			this.jmxport = jmxport;
+			this.serviceTag = serviceName;
 		}
 
 		@Override
 		public void run() {
-			logger.info("Start collecting jvm counters for service: {}", service);
+			logger.info("Start collecting jvm counters for serviceZKPath: {}", serviceZKPath);
 			long start = System.currentTimeMillis();
 			try {
 				List<FalconItem> items = new ArrayList<FalconItem>();
 				int num = 0;
-				List<String> hosts = jmxzkNode.getAllHosts(String.format(pattern, service));
+				List<String> hosts = jmxzkNode.getAllHosts(serviceZKPath);
 				for (String hostPort : hosts) {
 					num++;
 					//get ip
@@ -164,19 +156,19 @@ public class JMXMonitor {
 						proxyClient = ProxyClient.getProxyClient(host, jmxport, null, null);
 						proxyClient.connect();
 
-						JMXCall<Map<String, GCGenInfo>> gcGenInfoExtractor = new JVMGCGenInfoExtractor(proxyClient, jmxport, host);
+						JMXCall<Map<String, GCGenInfo>> gcGenInfoExtractor = new JVMGCGenInfoExtractor(proxyClient, jmxport, host, serviceTag);
 						Map<String, GCGenInfo> genInfoMap = gcGenInfoExtractor.call();
 						items.addAll(gcGenInfoExtractor.build(genInfoMap));
 
-						JMXCall<Double> gcThroughputExtractor = new JVMGCThroughputExtractor(proxyClient, jmxport, host);
+						JMXCall<Double> gcThroughputExtractor = new JVMGCThroughputExtractor(proxyClient, jmxport, host, serviceTag);
 						Double gcThroughput = gcThroughputExtractor.call();
 						items.addAll(gcThroughputExtractor.build(gcThroughput));
 
-						JMXCall<MemoryUsedInfo> memoryUsedExtractor = new JVMMemoryUsedExtractor(proxyClient, jmxport, host);
+						JMXCall<MemoryUsedInfo> memoryUsedExtractor = new JVMMemoryUsedExtractor(proxyClient, jmxport, host, serviceTag);
 						MemoryUsedInfo memoryUsedInfo = memoryUsedExtractor.call();
 						items.addAll(memoryUsedExtractor.build(memoryUsedInfo));
 
-						JMXCall<ThreadInfo> threadExtractor = new JVMThreadExtractor(proxyClient, jmxport, host);
+						JMXCall<ThreadInfo> threadExtractor = new JVMThreadExtractor(proxyClient, jmxport, host, serviceTag);
 						ThreadInfo threadInfo = threadExtractor.call();
 						items.addAll(threadExtractor.build(threadInfo));
 					} finally {
@@ -204,7 +196,7 @@ public class JMXMonitor {
 			} catch (Throwable e) {
 				logger.error(e.getMessage(), e);
 			}
-			logger.info("Finish collecting jvm counters for service: {}, cost {} millis", service, (System.currentTimeMillis() - start));
+			logger.info("Finish collecting jvm counters for serviceZKPath: {}, cost {} millis", serviceZKPath, (System.currentTimeMillis() - start));
 		}
 	}
 

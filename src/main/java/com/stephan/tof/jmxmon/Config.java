@@ -29,7 +29,8 @@ public class Config {
 	private String agentPostUrl;
 	private int step;
 	private Map<String, Integer> serviceZKPathToJmxPort;
-	
+	private String jmxZKConfigPath;
+
 	private String jmxHost;
 	private int[] jmxPorts;
 	private String zkServers;
@@ -69,14 +70,18 @@ public class Config {
 		}
 
 		this.zkServers = config.getString("zkservers");
-		
+
+		jmxZKConfigPath = config.getString("jmx.config.zookeeper.path");
+
 		String[] jmxPortArray = config.getStringArray("jmx.ports");
-		serviceZKPathToJmxPort = new HashMap<String, Integer>();
-		//jmxPorts = new int[jmxPortArray.length];
-		for (int i = 0; i < jmxPortArray.length; i++) {
-			String[] parts = StringUtils.split(jmxPortArray[i], ":");
-			serviceZKPathToJmxPort.put(parts[0], Integer.valueOf(parts[1]));
-			//jmxPorts[i] = Integer.parseInt(jmxPortArray[i]);
+		if (jmxPortArray != null) {
+			serviceZKPathToJmxPort = new HashMap<String, Integer>();
+			//jmxPorts = new int[jmxPortArray.length];
+//			for (int i = 0; i < jmxPortArray.length; i++) {
+//				String[] parts = StringUtils.split(jmxPortArray[i], ":");
+//				serviceZKPathToJmxPort.put(parts[0], Integer.valueOf(parts[1]));
+//				//jmxPorts[i] = Integer.parseInt(jmxPortArray[i]);
+//			}
 		}
 		
 		logger.info("init config ok");
@@ -141,6 +146,10 @@ public class Config {
 
 	public Map<String, Integer> getServiceZKPathToJmxPort() {
 		return serviceZKPathToJmxPort;
+	}
+
+	public String getJmxZKConfigPath() {
+		return this.jmxZKConfigPath;
 	}
 
 	public String getZkServers() {

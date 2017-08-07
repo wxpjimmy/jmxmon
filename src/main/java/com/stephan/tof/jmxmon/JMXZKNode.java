@@ -1,11 +1,12 @@
 package com.stephan.tof.jmxmon;
 
 import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.serialize.ZkSerializer;
 
 import java.util.List;
 
 /**
- * Created by wxp04 on 2017/2/3.
+ * Created by wangxiaopeng on 2017/2/3.
  */
 public class JMXZKNode {
     private int defaultSessionTimeout = 30000;
@@ -16,8 +17,16 @@ public class JMXZKNode {
         zkClient = new ZkClient(zkservers, defaultSessionTimeout, defaultConnectionTimeout);
     }
 
+    public JMXZKNode(String zkservers, ZkSerializer zkSerializer) {
+        zkClient = new ZkClient(zkservers, defaultSessionTimeout, defaultConnectionTimeout, zkSerializer);
+    }
+
     public List<String> getAllHosts(String zkPath) {
         return zkClient.getChildren(zkPath);
+    }
+
+    public String getContent(String zkPath) {
+        return zkClient.readData(zkPath, true);
     }
 
     public void close() {

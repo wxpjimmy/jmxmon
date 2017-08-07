@@ -19,9 +19,9 @@ import com.stephan.tof.jmxmon.jmxutil.ProxyClient;
 public class JVMMemoryUsedExtractor extends JVMDataExtractor<MemoryUsedInfo> {
 	private String host;
 
-	public JVMMemoryUsedExtractor(ProxyClient proxyClient, int jmxPort, String host)
+	public JVMMemoryUsedExtractor(ProxyClient proxyClient, int jmxPort, String host, String serviceTag)
 			throws IOException {
-		super(proxyClient, jmxPort);
+		super(proxyClient, jmxPort, serviceTag);
 		this.host = host;
 	}
 
@@ -75,6 +75,13 @@ public class JVMMemoryUsedExtractor extends JVMDataExtractor<MemoryUsedInfo> {
 	@Override
 	public List<FalconItem> build(MemoryUsedInfo jmxResultData) throws Exception {
 		List<FalconItem> items = new ArrayList<FalconItem>();
+
+		StringBuilder tagsBuilder = new StringBuilder();
+		tagsBuilder.append("jmxport=").append(getJmxPort());
+		if(StringUtils.isNotBlank(getServiceTag())) {
+			tagsBuilder.append(",").append("service=").append(getServiceTag());
+		}
+		String tags = StringUtils.lowerCase(tagsBuilder.toString());
 		
 		// 将jvm信息封装成openfalcon格式数据
 		FalconItem oldGenUsedItem = new FalconItem();
@@ -82,7 +89,7 @@ public class JVMMemoryUsedExtractor extends JVMDataExtractor<MemoryUsedInfo> {
 		oldGenUsedItem.setEndpoint(host);
 		oldGenUsedItem.setMetric(StringUtils.lowerCase(Constants.oldGenMemUsed));
 		oldGenUsedItem.setStep(Constants.defaultStep);
-		oldGenUsedItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	
+		oldGenUsedItem.setTags(tags);
 		oldGenUsedItem.setTimestamp(System.currentTimeMillis() / 1000);
 		oldGenUsedItem.setValue(jmxResultData.getOldGenUsed());
 		items.add(oldGenUsedItem);
@@ -92,7 +99,7 @@ public class JVMMemoryUsedExtractor extends JVMDataExtractor<MemoryUsedInfo> {
 		oldGenUsedRatioItem.setEndpoint(host);
 		oldGenUsedRatioItem.setMetric(StringUtils.lowerCase(Constants.oldGenMemRatio));
 		oldGenUsedRatioItem.setStep(Constants.defaultStep);
-		oldGenUsedRatioItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	
+		oldGenUsedRatioItem.setTags(tags);
 		oldGenUsedRatioItem.setTimestamp(System.currentTimeMillis() / 1000);
 		oldGenUsedRatioItem.setValue(jmxResultData.getOldGenUsedRatio());
 		items.add(oldGenUsedRatioItem);
@@ -102,7 +109,7 @@ public class JVMMemoryUsedExtractor extends JVMDataExtractor<MemoryUsedInfo> {
 		newGenPromotionItem.setEndpoint(host);
 		newGenPromotionItem.setMetric(StringUtils.lowerCase(Constants.newGenPromotion));
 		newGenPromotionItem.setStep(Constants.defaultStep);
-		newGenPromotionItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	
+		newGenPromotionItem.setTags(tags);
 		newGenPromotionItem.setTimestamp(System.currentTimeMillis() / 1000);
 		newGenPromotionItem.setValue(jmxResultData.getNewGenPromotion());
 		items.add(newGenPromotionItem);
@@ -112,7 +119,7 @@ public class JVMMemoryUsedExtractor extends JVMDataExtractor<MemoryUsedInfo> {
 		newGenAvgPromotionItem.setEndpoint(host);
 		newGenAvgPromotionItem.setMetric(StringUtils.lowerCase(Constants.newGenAvgPromotion));
 		newGenAvgPromotionItem.setStep(Constants.defaultStep);
-		newGenAvgPromotionItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	
+		newGenAvgPromotionItem.setTags(tags);
 		newGenAvgPromotionItem.setTimestamp(System.currentTimeMillis() / 1000);
 		newGenAvgPromotionItem.setValue(jmxResultData.getNewGenAvgPromotion());
 		items.add(newGenAvgPromotionItem);

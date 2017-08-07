@@ -19,8 +19,8 @@ import com.stephan.tof.jmxmon.jmxutil.ProxyClient;
 public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInfo>> {
 	private String host;
 
-	public JVMGCGenInfoExtractor(ProxyClient proxyClient, int jmxPort, String host) throws IOException {
-		super(proxyClient, jmxPort);
+	public JVMGCGenInfoExtractor(ProxyClient proxyClient, int jmxPort, String host, String serviceTag) throws IOException {
+		super(proxyClient, jmxPort, serviceTag);
 		this.host = host;
 	}
 
@@ -71,6 +71,13 @@ public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInf
 	public List<FalconItem> build(Map<String, GCGenInfo> jmxResultData)
 			throws Exception {
 		List<FalconItem> items = new ArrayList<FalconItem>();
+
+		StringBuilder tagsBuilder = new StringBuilder();
+		tagsBuilder.append("jmxport=").append(getJmxPort());
+		if(StringUtils.isNotBlank(getServiceTag())) {
+			tagsBuilder.append(",").append("service=").append(getServiceTag());
+		}
+		String tags = StringUtils.lowerCase(tagsBuilder.toString());
 		
 		// 将jvm信息封装成openfalcon格式数据
 		for (String gcMXBeanName : jmxResultData.keySet()) {
@@ -79,7 +86,8 @@ public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInf
 			avgTimeItem.setEndpoint(host);
 			avgTimeItem.setMetric(StringUtils.lowerCase(gcMXBeanName + Constants.metricSeparator + Constants.gcAvgTime));
 			avgTimeItem.setStep(Constants.defaultStep);
-			avgTimeItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	
+
+			avgTimeItem.setTags(tags);
 			avgTimeItem.setTimestamp(System.currentTimeMillis() / 1000);
 			avgTimeItem.setValue(jmxResultData.get(gcMXBeanName).getGcAvgTime());
 			items.add(avgTimeItem);
@@ -89,7 +97,7 @@ public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInf
 			countItem.setEndpoint(host);
 			countItem.setMetric(StringUtils.lowerCase(gcMXBeanName + Constants.metricSeparator + Constants.gcCount));
 			countItem.setStep(Constants.defaultStep);
-			countItem.setTags(StringUtils.lowerCase("jmxport=" + getJmxPort()));	
+			countItem.setTags(tags);
 			countItem.setTimestamp(System.currentTimeMillis() / 1000);
 			countItem.setValue(jmxResultData.get(gcMXBeanName).getGcCount());
 			items.add(countItem);

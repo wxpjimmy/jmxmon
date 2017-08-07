@@ -14,14 +14,17 @@ public abstract class JMXCall<T> {
 	
 	private final ProxyClient proxyClient;
 	private final int jmxPort;
+	private final String serviceTag;
+
 	
-	public JMXCall(final ProxyClient proxyClient, int jmxPort) {
+	public JMXCall(final ProxyClient proxyClient, int jmxPort, String serviceTag) {
 		this.proxyClient = proxyClient;
 		
 		if (jmxPort <= 0) {
 			throw new IllegalStateException("jmxPort is 0, client=" + proxyClient.getUrl());
 		}
 		this.jmxPort = jmxPort;
+		this.serviceTag = serviceTag;
 	}
 	
 	/**
@@ -53,5 +56,12 @@ public abstract class JMXCall<T> {
 	 */
 	public int getJmxPort() {
 		return jmxPort;
+	}
+
+	/**
+	 * @return serviceTag
+	 */
+	public String getServiceTag() {
+		return serviceTag;
 	}
 }
