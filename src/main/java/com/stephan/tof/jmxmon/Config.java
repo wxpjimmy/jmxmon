@@ -34,6 +34,7 @@ public class Config {
 	private String jmxHost;
 	private int[] jmxPorts;
 	private String zkServers;
+	private int threadPoolSize;
 	
 	private Config(){}
 	
@@ -72,6 +73,8 @@ public class Config {
 		this.zkServers = config.getString("zkservers");
 
 		jmxZKConfigPath = config.getString("jmx.config.zookeeper.path");
+
+		this.threadPoolSize = config.getInt("thread.pool.size", 8);
 
 		String[] jmxPortArray = config.getStringArray("jmx.ports");
 		if (jmxPortArray != null) {
@@ -154,5 +157,9 @@ public class Config {
 
 	public String getZkServers() {
 		return zkServers;
+	}
+
+	public int getThreadPoolSize() {
+		return this.threadPoolSize;
 	}
 }

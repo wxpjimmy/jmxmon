@@ -7,6 +7,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.stephan.tof.jmxmon.zookeeper.JMXZKConfigItem;
+import com.stephan.tof.jmxmon.zookeeper.JMXZKManager;
 import org.I0Itec.zkclient.exception.ZkMarshallingError;
 import org.I0Itec.zkclient.serialize.ZkSerializer;
 import org.apache.commons.lang.StringUtils;
@@ -22,10 +24,7 @@ import com.stephan.tof.jmxmon.bean.JacksonUtil;
 import com.stephan.tof.jmxmon.jmxutil.ProxyClient;
 
 public class JMXMonitor {
-
 	private static Logger logger = LoggerFactory.getLogger(JMXMonitor.class);
-	private static String pattern = "/services/%s/Pool";
-	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 	
 	public static void main(String[] args) {
 		if (args.length != 1) {
@@ -39,49 +38,26 @@ public class JMXMonitor {
 			throw new IllegalStateException(e);	// 抛出异常便于外部脚本感知
 		}
 
-
-		String jmxZkConfigPath = Config.I.getJmxZKConfigPath();
-	 	JMXZKNode jmxzkNode = new JMXZKNode(Config.I.getZkServers(), new ZKStringSerializer());
+	 	JMXZKManager jmxzkNode = new JMXZKManager(Config.I.getZkServers());
 		List<Runnable> tasks = new ArrayList<Runnable>();
-
-		if (StringUtils.isBlank(jmxZkConfigPath)) {
+		Set<String> serviceNodeZkPaths = jmxzkNode.getJmxZKConfigPaths();
+		if (serviceNodeZkPaths == null || serviceNodeZkPaths.isEmpty()) {
 			Map<String, Integer> serviceZkPathToJmxPort = Config.I.getServiceZKPathToJmxPort();
 			for (String service : serviceZkPathToJmxPort.keySet()) {
 				Runnable runnable = new Task(service, serviceZkPathToJmxPort.get(service));
 				tasks.add(runnable);
 			}
 		} else  {
-			String data = jmxzkNode.getContent(jmxZkConfigPath);
-			String[] parts = StringUtils.split(data, ",");
-			for(String part:parts) {
-				String[] secs = StringUtils.split(part, ":");
-				String zkServicePath = secs[0];
-				int jmxPort = Integer.parseInt(secs[1]);
-				String serviceTag = null;
-				if (secs.length > 2) {
-					serviceTag = secs[2];
-				}
-				Runnable runnable = new Task(jmxzkNode, zkServicePath, jmxPort, serviceTag);
+			for(String serviceNodeZkPath:jmxzkNode.getJmxZKConfigPaths()) {
+				Runnable runnable = new Task(jmxzkNode, serviceNodeZkPath);
 				tasks.add(runnable);
 			}
 		}
 
-		ScheduledExecutorService executor = Executors.newScheduledThreadPool(tasks.size());
+		ScheduledExecutorService executor = Executors.newScheduledThreadPool(Config.I.getThreadPoolSize());
+		jmxzkNode.setExecutorService(executor);
 		for(Runnable runnable: tasks) {
 			executor.scheduleAtFixedRate(runnable, 0, Config.I.getStep(), TimeUnit.SECONDS);
-		}
-	}
-
-	static class ZKStringSerializer implements ZkSerializer {
-
-		@Override
-		public byte[] serialize(Object data) throws ZkMarshallingError {
-			return ((String) data).getBytes(DEFAULT_CHARSET);
-		}
-
-		@Override
-		public Object deserialize(byte[] bytes) throws ZkMarshallingError {
-			return new String(bytes, DEFAULT_CHARSET);
 		}
 	}
 
@@ -97,40 +73,39 @@ public class JMXMonitor {
 		return ipSec;
 	}
 
-	static class Task implements Runnable {
-		private String serviceZKPath;
+	public static class Task implements Runnable {
+		private String serviceNodeZKPath;
 		private int jmxport;
-		private JMXZKNode jmxzkNode;
-		//tag used in counter
-		private String serviceTag;
+		private JMXZKManager jmxzkNode;
 		private Map<String, String> ipToHost = new HashMap<>();
 
 		@Deprecated
-		private Task(String serviceZKPath, int jmxport) {
-			jmxzkNode = new JMXZKNode(Config.I.getZkServers());
-			this.serviceZKPath = serviceZKPath;
+		private Task(String serviceNodeZKPath, int jmxport) {
+			jmxzkNode = new JMXZKManager(Config.I.getZkServers());
+			this.serviceNodeZKPath = serviceNodeZKPath;
 			this.jmxport = jmxport;
 		}
 
-		public Task(JMXZKNode jmxzkNode, String serviceZkPath, int jmxport) {
-			this(jmxzkNode, serviceZkPath, jmxport, null);
-		}
-
-		public Task(JMXZKNode jmxzkNode, String serviceZkPath, int jmxport, String serviceName) {
+		public Task(JMXZKManager jmxzkNode, String serviceZkPath) {
 			this.jmxzkNode = jmxzkNode;
-			this.serviceZKPath = serviceZkPath;
-			this.jmxport = jmxport;
-			this.serviceTag = serviceName;
+			this.serviceNodeZKPath = serviceZkPath;
 		}
 
 		@Override
 		public void run() {
-			logger.info("Start collecting jvm counters for serviceZKPath: {}", serviceZKPath);
+			logger.info("Start collecting jvm counters for serviceNodeZKPath: {}", serviceNodeZKPath);
 			long start = System.currentTimeMillis();
+			JMXZKConfigItem configItem = jmxzkNode.getConfigItem(serviceNodeZKPath);
+			if(configItem == null) {
+				logger.info("{} has been removed!", serviceNodeZKPath);
+				return;
+			}
+			this.jmxport = configItem.getJmxPort();
+			String serviceTag = configItem.getServiceTag();
 			try {
 				List<FalconItem> items = new ArrayList<FalconItem>();
 				int num = 0;
-				List<String> hosts = jmxzkNode.getAllHosts(serviceZKPath);
+				List<String> hosts = jmxzkNode.getAllHosts(serviceNodeZKPath);
 				for (String hostPort : hosts) {
 					num++;
 					//get ip
@@ -196,7 +171,7 @@ public class JMXMonitor {
 			} catch (Throwable e) {
 				logger.error(e.getMessage(), e);
 			}
-			logger.info("Finish collecting jvm counters for serviceZKPath: {}, cost {} millis", serviceZKPath, (System.currentTimeMillis() - start));
+			logger.info("Finish collecting jvm counters for serviceNodeZKPath: {}, cost {} millis", serviceNodeZKPath, (System.currentTimeMillis() - start));
 		}
 	}
 
