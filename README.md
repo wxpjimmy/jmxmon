@@ -30,13 +30,17 @@ Open-Falcon>=0.0.5
 配置文件默认文件名为conf.properties，内容说明如下：
 
     # 工作目录用来存放jmxmon的临时缓存文件，注意不要修改此目录下的文件
+    # the working dir
     workDir=./
     
-    # 需要监听的本地jmx端口，支持监听多个端口，多端口用逗号分隔
-    jmx.ports=10000,10001,10002,10003
-    
-    # 本地agent的上报url，如果使用open-falcon的默认配置，则这里不需要改变
+    # agent port url
     agent.posturl=http://localhost:1988/v1/push
+    
+    # 需要收集的服务配置项（格式如下：ServiceNodeZKPath:jmxPort[:serviceTag],多项的话以逗号分隔)
+    jmx.config.zookeeper.path=/com/xiaomi/config/miui/ads/jmx
+    
+    # zk服务地址
+    zkservers=host1:port,host2:port
     
     # 可选项：上报给open-falcon的endpoint，默认值为本机hostname。不建议修改
     #hostname=
