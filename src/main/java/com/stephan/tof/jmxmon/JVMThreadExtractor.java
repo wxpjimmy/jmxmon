@@ -33,33 +33,37 @@ public class JVMThreadExtractor extends JVMDataExtractor<ThreadInfo> {
 	public List<FalconItem> build(ThreadInfo jmxResultData) throws Exception {
 		List<FalconItem> items = new ArrayList<FalconItem>();
 
-		StringBuilder tagsBuilder = new StringBuilder();
-		tagsBuilder.append("jmxport=").append(getJmxPort());
-		if(StringUtils.isNotBlank(getServiceTag())) {
-			tagsBuilder.append(",").append("service=").append(getServiceTag());
-		}
-		String tags = StringUtils.lowerCase(tagsBuilder.toString());
+		try {
+			StringBuilder tagsBuilder = new StringBuilder();
+			tagsBuilder.append("jmxport=").append(getJmxPort());
+			if (StringUtils.isNotBlank(getServiceTag())) {
+				tagsBuilder.append(",").append("service=").append(getServiceTag());
+			}
+			String tags = StringUtils.lowerCase(tagsBuilder.toString());
 
-		// 将jvm信息封装成openfalcon格式数据
-		FalconItem threadNumItem = new FalconItem();
-		threadNumItem.setCounterType(CounterType.GAUGE.toString());
-		threadNumItem.setEndpoint(host);
-		threadNumItem.setMetric(StringUtils.lowerCase(Constants.threadActiveCount));
-		threadNumItem.setStep(Constants.defaultStep);
-		threadNumItem.setTags(tags);
-		threadNumItem.setTimestamp(System.currentTimeMillis() / 1000);
-		threadNumItem.setValue(jmxResultData.getThreadNum());
-		items.add(threadNumItem);
-		
-		FalconItem peakThreadNumItem = new FalconItem();
-		peakThreadNumItem.setCounterType(CounterType.GAUGE.toString());
-		peakThreadNumItem.setEndpoint(host);
-		peakThreadNumItem.setMetric(StringUtils.lowerCase(Constants.threadPeakCount));
-		peakThreadNumItem.setStep(Constants.defaultStep);
-		peakThreadNumItem.setTags(tags);
-		peakThreadNumItem.setTimestamp(System.currentTimeMillis() / 1000);
-		peakThreadNumItem.setValue(jmxResultData.getPeakThreadNum());
-		items.add(peakThreadNumItem);
+			// 将jvm信息封装成openfalcon格式数据
+			FalconItem threadNumItem = new FalconItem();
+			threadNumItem.setCounterType(CounterType.GAUGE.toString());
+			threadNumItem.setEndpoint(host);
+			threadNumItem.setMetric(StringUtils.lowerCase(Constants.threadActiveCount));
+			threadNumItem.setStep(Constants.defaultStep);
+			threadNumItem.setTags(tags);
+			threadNumItem.setTimestamp(System.currentTimeMillis() / 1000);
+			threadNumItem.setValue(jmxResultData.getThreadNum());
+			items.add(threadNumItem);
+
+			FalconItem peakThreadNumItem = new FalconItem();
+			peakThreadNumItem.setCounterType(CounterType.GAUGE.toString());
+			peakThreadNumItem.setEndpoint(host);
+			peakThreadNumItem.setMetric(StringUtils.lowerCase(Constants.threadPeakCount));
+			peakThreadNumItem.setStep(Constants.defaultStep);
+			peakThreadNumItem.setTags(tags);
+			peakThreadNumItem.setTimestamp(System.currentTimeMillis() / 1000);
+			peakThreadNumItem.setValue(jmxResultData.getPeakThreadNum());
+			items.add(peakThreadNumItem);
+		} catch (Exception e) {
+			logger.error("fail to generage jmx thread extractor", e);
+		}
 		
 		return items;
 	}

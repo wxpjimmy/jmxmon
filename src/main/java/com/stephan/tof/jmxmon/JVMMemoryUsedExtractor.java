@@ -76,53 +76,57 @@ public class JVMMemoryUsedExtractor extends JVMDataExtractor<MemoryUsedInfo> {
 	public List<FalconItem> build(MemoryUsedInfo jmxResultData) throws Exception {
 		List<FalconItem> items = new ArrayList<FalconItem>();
 
-		StringBuilder tagsBuilder = new StringBuilder();
-		tagsBuilder.append("jmxport=").append(getJmxPort());
-		if(StringUtils.isNotBlank(getServiceTag())) {
-			tagsBuilder.append(",").append("service=").append(getServiceTag());
+		try {
+			StringBuilder tagsBuilder = new StringBuilder();
+			tagsBuilder.append("jmxport=").append(getJmxPort());
+			if (StringUtils.isNotBlank(getServiceTag())) {
+				tagsBuilder.append(",").append("service=").append(getServiceTag());
+			}
+			String tags = StringUtils.lowerCase(tagsBuilder.toString());
+
+			// 将jvm信息封装成openfalcon格式数据
+			FalconItem oldGenUsedItem = new FalconItem();
+			oldGenUsedItem.setCounterType(CounterType.GAUGE.toString());
+			oldGenUsedItem.setEndpoint(host);
+			oldGenUsedItem.setMetric(StringUtils.lowerCase(Constants.oldGenMemUsed));
+			oldGenUsedItem.setStep(Constants.defaultStep);
+			oldGenUsedItem.setTags(tags);
+			oldGenUsedItem.setTimestamp(System.currentTimeMillis() / 1000);
+			oldGenUsedItem.setValue(jmxResultData.getOldGenUsed());
+			items.add(oldGenUsedItem);
+
+			FalconItem oldGenUsedRatioItem = new FalconItem();
+			oldGenUsedRatioItem.setCounterType(CounterType.GAUGE.toString());
+			oldGenUsedRatioItem.setEndpoint(host);
+			oldGenUsedRatioItem.setMetric(StringUtils.lowerCase(Constants.oldGenMemRatio));
+			oldGenUsedRatioItem.setStep(Constants.defaultStep);
+			oldGenUsedRatioItem.setTags(tags);
+			oldGenUsedRatioItem.setTimestamp(System.currentTimeMillis() / 1000);
+			oldGenUsedRatioItem.setValue(jmxResultData.getOldGenUsedRatio());
+			items.add(oldGenUsedRatioItem);
+
+			FalconItem newGenPromotionItem = new FalconItem();
+			newGenPromotionItem.setCounterType(CounterType.GAUGE.toString());
+			newGenPromotionItem.setEndpoint(host);
+			newGenPromotionItem.setMetric(StringUtils.lowerCase(Constants.newGenPromotion));
+			newGenPromotionItem.setStep(Constants.defaultStep);
+			newGenPromotionItem.setTags(tags);
+			newGenPromotionItem.setTimestamp(System.currentTimeMillis() / 1000);
+			newGenPromotionItem.setValue(jmxResultData.getNewGenPromotion());
+			items.add(newGenPromotionItem);
+
+			FalconItem newGenAvgPromotionItem = new FalconItem();
+			newGenAvgPromotionItem.setCounterType(CounterType.GAUGE.toString());
+			newGenAvgPromotionItem.setEndpoint(host);
+			newGenAvgPromotionItem.setMetric(StringUtils.lowerCase(Constants.newGenAvgPromotion));
+			newGenAvgPromotionItem.setStep(Constants.defaultStep);
+			newGenAvgPromotionItem.setTags(tags);
+			newGenAvgPromotionItem.setTimestamp(System.currentTimeMillis() / 1000);
+			newGenAvgPromotionItem.setValue(jmxResultData.getNewGenAvgPromotion());
+			items.add(newGenAvgPromotionItem);
+		} catch (Exception e){
+			logger.error("fail to generate memory usage", e);
 		}
-		String tags = StringUtils.lowerCase(tagsBuilder.toString());
-		
-		// 将jvm信息封装成openfalcon格式数据
-		FalconItem oldGenUsedItem = new FalconItem();
-		oldGenUsedItem.setCounterType(CounterType.GAUGE.toString());
-		oldGenUsedItem.setEndpoint(host);
-		oldGenUsedItem.setMetric(StringUtils.lowerCase(Constants.oldGenMemUsed));
-		oldGenUsedItem.setStep(Constants.defaultStep);
-		oldGenUsedItem.setTags(tags);
-		oldGenUsedItem.setTimestamp(System.currentTimeMillis() / 1000);
-		oldGenUsedItem.setValue(jmxResultData.getOldGenUsed());
-		items.add(oldGenUsedItem);
-		
-		FalconItem oldGenUsedRatioItem = new FalconItem();
-		oldGenUsedRatioItem.setCounterType(CounterType.GAUGE.toString());
-		oldGenUsedRatioItem.setEndpoint(host);
-		oldGenUsedRatioItem.setMetric(StringUtils.lowerCase(Constants.oldGenMemRatio));
-		oldGenUsedRatioItem.setStep(Constants.defaultStep);
-		oldGenUsedRatioItem.setTags(tags);
-		oldGenUsedRatioItem.setTimestamp(System.currentTimeMillis() / 1000);
-		oldGenUsedRatioItem.setValue(jmxResultData.getOldGenUsedRatio());
-		items.add(oldGenUsedRatioItem);
-		
-		FalconItem newGenPromotionItem = new FalconItem();
-		newGenPromotionItem.setCounterType(CounterType.GAUGE.toString());
-		newGenPromotionItem.setEndpoint(host);
-		newGenPromotionItem.setMetric(StringUtils.lowerCase(Constants.newGenPromotion));
-		newGenPromotionItem.setStep(Constants.defaultStep);
-		newGenPromotionItem.setTags(tags);
-		newGenPromotionItem.setTimestamp(System.currentTimeMillis() / 1000);
-		newGenPromotionItem.setValue(jmxResultData.getNewGenPromotion());
-		items.add(newGenPromotionItem);
-		
-		FalconItem newGenAvgPromotionItem = new FalconItem();
-		newGenAvgPromotionItem.setCounterType(CounterType.GAUGE.toString());
-		newGenAvgPromotionItem.setEndpoint(host);
-		newGenAvgPromotionItem.setMetric(StringUtils.lowerCase(Constants.newGenAvgPromotion));
-		newGenAvgPromotionItem.setStep(Constants.defaultStep);
-		newGenAvgPromotionItem.setTags(tags);
-		newGenAvgPromotionItem.setTimestamp(System.currentTimeMillis() / 1000);
-		newGenAvgPromotionItem.setValue(jmxResultData.getNewGenAvgPromotion());
-		items.add(newGenAvgPromotionItem);
 		
 		return items;
 	}

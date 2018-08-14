@@ -72,35 +72,39 @@ public class JVMGCGenInfoExtractor extends JVMDataExtractor<Map<String, GCGenInf
 			throws Exception {
 		List<FalconItem> items = new ArrayList<FalconItem>();
 
-		StringBuilder tagsBuilder = new StringBuilder();
-		tagsBuilder.append("jmxport=").append(getJmxPort());
-		if(StringUtils.isNotBlank(getServiceTag())) {
-			tagsBuilder.append(",").append("service=").append(getServiceTag());
-		}
-		String tags = StringUtils.lowerCase(tagsBuilder.toString());
-		
-		// 将jvm信息封装成openfalcon格式数据
-		for (String gcMXBeanName : jmxResultData.keySet()) {
-			FalconItem avgTimeItem = new FalconItem();
-			avgTimeItem.setCounterType(CounterType.GAUGE.toString());
-			avgTimeItem.setEndpoint(host);
-			avgTimeItem.setMetric(StringUtils.lowerCase(gcMXBeanName + Constants.metricSeparator + Constants.gcAvgTime));
-			avgTimeItem.setStep(Constants.defaultStep);
+		try {
+			StringBuilder tagsBuilder = new StringBuilder();
+			tagsBuilder.append("jmxport=").append(getJmxPort());
+			if (StringUtils.isNotBlank(getServiceTag())) {
+				tagsBuilder.append(",").append("service=").append(getServiceTag());
+			}
+			String tags = StringUtils.lowerCase(tagsBuilder.toString());
 
-			avgTimeItem.setTags(tags);
-			avgTimeItem.setTimestamp(System.currentTimeMillis() / 1000);
-			avgTimeItem.setValue(jmxResultData.get(gcMXBeanName).getGcAvgTime());
-			items.add(avgTimeItem);
-			
-			FalconItem countItem = new FalconItem();
-			countItem.setCounterType(CounterType.GAUGE.toString());
-			countItem.setEndpoint(host);
-			countItem.setMetric(StringUtils.lowerCase(gcMXBeanName + Constants.metricSeparator + Constants.gcCount));
-			countItem.setStep(Constants.defaultStep);
-			countItem.setTags(tags);
-			countItem.setTimestamp(System.currentTimeMillis() / 1000);
-			countItem.setValue(jmxResultData.get(gcMXBeanName).getGcCount());
-			items.add(countItem);
+			// 将jvm信息封装成openfalcon格式数据
+			for (String gcMXBeanName : jmxResultData.keySet()) {
+				FalconItem avgTimeItem = new FalconItem();
+				avgTimeItem.setCounterType(CounterType.GAUGE.toString());
+				avgTimeItem.setEndpoint(host);
+				avgTimeItem.setMetric(StringUtils.lowerCase(gcMXBeanName + Constants.metricSeparator + Constants.gcAvgTime));
+				avgTimeItem.setStep(Constants.defaultStep);
+
+				avgTimeItem.setTags(tags);
+				avgTimeItem.setTimestamp(System.currentTimeMillis() / 1000);
+				avgTimeItem.setValue(jmxResultData.get(gcMXBeanName).getGcAvgTime());
+				items.add(avgTimeItem);
+
+				FalconItem countItem = new FalconItem();
+				countItem.setCounterType(CounterType.GAUGE.toString());
+				countItem.setEndpoint(host);
+				countItem.setMetric(StringUtils.lowerCase(gcMXBeanName + Constants.metricSeparator + Constants.gcCount));
+				countItem.setStep(Constants.defaultStep);
+				countItem.setTags(tags);
+				countItem.setTimestamp(System.currentTimeMillis() / 1000);
+				countItem.setValue(jmxResultData.get(gcMXBeanName).getGcCount());
+				items.add(countItem);
+			}
+		} catch (Exception e) {
+			logger.error("fail to build gc gen info", e);
 		}
 		
 		return items;
