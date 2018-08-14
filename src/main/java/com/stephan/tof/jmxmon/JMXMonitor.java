@@ -131,21 +131,39 @@ public class JMXMonitor {
 						proxyClient = ProxyClient.getProxyClient(host, jmxport, null, null);
 						proxyClient.connect();
 
-						JMXCall<Map<String, GCGenInfo>> gcGenInfoExtractor = new JVMGCGenInfoExtractor(proxyClient, jmxport, host, serviceTag);
-						Map<String, GCGenInfo> genInfoMap = gcGenInfoExtractor.call();
-						items.addAll(gcGenInfoExtractor.build(genInfoMap));
+						try {
+							JMXCall<Map<String, GCGenInfo>> gcGenInfoExtractor = new JVMGCGenInfoExtractor(proxyClient, jmxport, host, serviceTag);
+							Map<String, GCGenInfo> genInfoMap = gcGenInfoExtractor.call();
+							items.addAll(gcGenInfoExtractor.build(genInfoMap));
+						} catch (Exception e) {
+							logger.error("fail to get gc gen info", e);
+						}
 
-						JMXCall<Double> gcThroughputExtractor = new JVMGCThroughputExtractor(proxyClient, jmxport, host, serviceTag);
-						Double gcThroughput = gcThroughputExtractor.call();
-						items.addAll(gcThroughputExtractor.build(gcThroughput));
+						try {
+							JMXCall<Double> gcThroughputExtractor = new JVMGCThroughputExtractor(proxyClient, jmxport, host, serviceTag);
+							Double gcThroughput = gcThroughputExtractor.call();
+							items.addAll(gcThroughputExtractor.build(gcThroughput));
+						} catch (Exception e) {
+							logger.error("fail to get gc throughout info", e);
+						}
 
-						JMXCall<MemoryUsedInfo> memoryUsedExtractor = new JVMMemoryUsedExtractor(proxyClient, jmxport, host, serviceTag);
-						MemoryUsedInfo memoryUsedInfo = memoryUsedExtractor.call();
-						items.addAll(memoryUsedExtractor.build(memoryUsedInfo));
+						try {
+							JMXCall<MemoryUsedInfo> memoryUsedExtractor = new JVMMemoryUsedExtractor(proxyClient, jmxport, host, serviceTag);
+							MemoryUsedInfo memoryUsedInfo = memoryUsedExtractor.call();
+							items.addAll(memoryUsedExtractor.build(memoryUsedInfo));
+						} catch (Exception e) {
+							logger.error("fail to get jvm memory used", e);
+						}
 
-						JMXCall<ThreadInfo> threadExtractor = new JVMThreadExtractor(proxyClient, jmxport, host, serviceTag);
-						ThreadInfo threadInfo = threadExtractor.call();
-						items.addAll(threadExtractor.build(threadInfo));
+						try {
+							JMXCall<ThreadInfo> threadExtractor = new JVMThreadExtractor(proxyClient, jmxport, host, serviceTag);
+							ThreadInfo threadInfo = threadExtractor.call();
+							items.addAll(threadExtractor.build(threadInfo));
+						} catch (Exception e){
+							logger.error("fail to get jvm thead extractor", e);
+						}
+					} catch (Exception e) {
+						logger.error("fail to get jmx from jvm", e);
 					} finally {
 						if (proxyClient != null) {
 							proxyClient.disconnect();
