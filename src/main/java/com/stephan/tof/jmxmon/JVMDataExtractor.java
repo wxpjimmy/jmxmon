@@ -1,6 +1,7 @@
 package com.stephan.tof.jmxmon;
 
 import java.io.IOException;
+import java.lang.management.BufferPoolMXBean;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
@@ -16,8 +17,10 @@ public abstract class JVMDataExtractor<T> extends JMXCall<T> {
 	private final RuntimeMXBean runtimeMXBean;
 	
 	private final Collection<MemoryPoolProxy> memoryPoolList;
-	
+
 	private final ThreadMXBean threadMXBean;
+
+	private final Collection<BufferPoolMXBean> bufferPoolList;
 	
 	public JVMDataExtractor(ProxyClient proxyClient, int jmxPort, String serviceTag) throws IOException {
 		super(proxyClient, jmxPort, serviceTag);
@@ -25,6 +28,7 @@ public abstract class JVMDataExtractor<T> extends JMXCall<T> {
 		runtimeMXBean = proxyClient.getRuntimeMXBean();
 		memoryPoolList = proxyClient.getMemoryPoolProxies();
 		threadMXBean = proxyClient.getThreadMXBean();
+		bufferPoolList = proxyClient.getBufferPoolMXBeans();
 	}
 
 	/**
@@ -54,5 +58,12 @@ public abstract class JVMDataExtractor<T> extends JMXCall<T> {
 	public ThreadMXBean getThreadMXBean() {
 		return threadMXBean;
 	}
-	
+
+
+	/**
+	 * @return the bufferPool
+	 */
+	public Collection<BufferPoolMXBean> getBufferPoolList() {
+		return bufferPoolList;
+	}
 }

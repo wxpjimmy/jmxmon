@@ -13,6 +13,8 @@ public class Constants {
 	public static final String oldGenMemRatio 				= "old.gen.mem.ratio";
 	public static final String threadActiveCount			= "thread.active.count";
 	public static final String threadPeakCount 				= "thread.peak.count";
+	public static final String nioBufferCount					= "nio.buffer.count";
+	public static final String nioBufferMemused				= "nio.buffer.mem.used";
 	
 	public static final String tagSeparator 			= ",";
 	public static final String metricSeparator 			= ".";

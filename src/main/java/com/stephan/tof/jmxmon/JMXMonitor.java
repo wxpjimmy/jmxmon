@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.stephan.tof.jmxmon.HttpClientUtils.HttpResult;
+import com.stephan.tof.jmxmon.JVMBufferUsedExtractor.BufferPoolUsedInfo;
 import com.stephan.tof.jmxmon.JVMGCGenInfoExtractor.GCGenInfo;
 import com.stephan.tof.jmxmon.JVMMemoryUsedExtractor.MemoryUsedInfo;
 import com.stephan.tof.jmxmon.JVMThreadExtractor.ThreadInfo;
@@ -162,6 +163,14 @@ public class JMXMonitor {
 						} catch (Exception e){
 							logger.error("fail to get jvm thead extractor", e);
 						}
+
+						try {
+                            JMXCall<Map<String, BufferPoolUsedInfo>> bufferUsedExtractor = new JVMBufferUsedExtractor(proxyClient, jmxport, host, serviceTag);
+                            Map<String, BufferPoolUsedInfo> bufferPoolUsedInfoMap = bufferUsedExtractor.call();
+                            items.addAll(bufferUsedExtractor.build(bufferPoolUsedInfoMap));
+                        } catch (Exception e){
+                            logger.error("fail to get jvm nio buffer used", e);
+                        }
 					} catch (Exception e) {
 						logger.error("fail to get jmx from jvm", e);
 					} finally {
